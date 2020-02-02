@@ -1,0 +1,307 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage[colorlinks,linkcolor=red]{hyperref}
+\geometry{scale=0.8}
+
+\title{	
+\normalfont \normalsize
+\textsc{School of Data and Computer Science, Sun Yat-sen University} \\ [25pt] %textsc small capital letters
+\rule{\textwidth}{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge  E2 15-Puzzle Problem (IDA*)\\ % The assignment title
+\rule{\textwidth}{2pt} \\[0.5cm] % Thick bottom horizontal rule
+\author{16337102 ZiLin Huang}
+\date{\normalsize\today}
+}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{IDA* Algorithm}
+\subsection{Description}
+Iterative deepening A* (IDA*) was first described by Richard Korf in 1985, which is a graph traversal and path search algorithm that can find the shortest path between a designated start node and any member of a set of goal nodes in a weighted graph.
+
+It is a variant of \textbf{iterative deepening depth-first search} that borrows the idea to use a heuristic function to evaluate the remaining cost to get to the goal from the \textbf{A* search algorithm}.
+
+Since it is a depth-first search algorithm, its memory usage is lower than in A*, but unlike ordinary iterative deepening search, it concentrates on exploring the most promising nodes and thus does not go to the same depth everywhere in the search tree.
+
+\textbf{Iterative-deepening-A* works as follows:} at each iteration, perform a depth-first search, cutting off a branch when its total cost $f(n)=g(n)+h(n)$ exceeds a given threshold. This threshold starts at the estimate of the cost at the initial state, and increases for each iteration of the algorithm. At each iteration, the threshold used for the next iteration is the minimum cost of all values that exceeded the current threshold.
+\subsection{Pseudocode}
+\begin{figure}[ht]
+\centering
+\includegraphics[width=17.3cm]{Pic/code}
+\end{figure}
+\section{Tasks}
+
+
+
+\begin{itemize}
+	\item Please solve 15-Puzzle problem by using IDA* (Python or C++). You can use one of the two commonly used heuristic functions: h1 = the number of misplaced tiles. h2 = the sum of the distances of the tiles from their goal positions.
+	\item Here are 4 test cases for you to verify your algorithm correctness. You can also play this game (\texttt{15puzzle.zip}) for more information.
+	\begin{figure}[ht]
+	\centering
+	\includegraphics[width=8cm]{Pic/case1}
+	\quad
+	\includegraphics[width=8cm]{Pic/case2}
+	\\
+	\includegraphics[width=8cm]{Pic/case3}
+	\quad
+	\includegraphics[width=8cm]{Pic/case4}
+	
+	\end{figure}
+	\item Please send \texttt{E02\_YourNumber.pdf} to \texttt{ai\_2018@foxmail.com}, you can certainly use \texttt{E02\_15puzzle.tex} as the \LaTeX template.
+\end{itemize}
+
+
+\section{Codes}
+\lstset{language=C++}
+%%\lstset{language=Python}
+\begin{lstlisting}
+#include<iostream>
+#include<stack>
+#include<list>
+#include<stdlib.h>
+#include<time.h>
+using namespace std;
+
+class node
+{
+public:
+    node()
+    {
+        for(int i = 0;i < 4;i++)
+            for(int n = 0;n < 4;n++)
+                    state[i][n] = i * 4 + n + 1;
+        state[3][3] = 0;
+        g = 0;
+        movement = 0;
+    }
+    node& operator=(const node& m)//重载赋值运算符
+    {
+        for(int i = 0;i < 4;i++)
+            for(int n = 0;n < 4;n++)
+                    this->state[i][n] = m.state[i][n];
+        this->g = m.g;
+        this->movement = m.movement;
+        return *this;
+    }
+    bool operator == (const node& m)
+    {
+        bool result = true;
+        for(int i = 0;i < 4;i++)
+            for(int n = 0;n < 4;n++)
+                    if(this->state[i][n] != m.state[i][n])
+                        result = false;
+        return result;
+    }
+    int state[4][4];//数字位置
+    int g; //cost
+    int movement;//移动的块
+};
+
+int h(const node it) //启发式函数
+{
+    int num = 0;
+    for(int i = 1;i < 16;i++)
+    {
+        int x = (i - 1) / 4;
+        int y = (i + 3) % 4;
+        for(int n = 0;n < 4;n++)
+            for(int m = 0;m < 4;m++)
+                if(it.state[n][m] == i)
+                    num = num + abs(n - x) + abs(m - y);
+    }
+    return num;
+}
+
+class cmp
+{
+public:
+    bool operator()(const node n1, const node n2)
+    {
+        return h(n1) < h(n2);
+    }
+};
+
+bool is_goal(node m)
+{
+    bool result = true;
+    for(int i = 0;i < 4;i++)
+        for(int n = 0;n < 4;n++)
+            if(m.state[i][n] != i*4 + n + 1 && i*4 + n + 1 != 16)
+                    result = false;
+    return  result;
+}
+
+bool in_Path(node &n, list<node> &path)
+{
+    bool result = false;
+    list<node>::iterator i;
+    for(i = path.begin(); i != path.end(); i++)
+        if(n == *i)
+         {
+             result = true;
+             break;
+         }
+    return result;
+}
+
+list<node> successor(node &n)
+{
+    list<node> result;
+    int i, m;
+    int xx, yy;
+    for(i = 0;i < 4;i++)//找出空格
+        for(m = 0;m < 4;m++)
+            if(n.state[i][m] == 0)
+            {
+                xx = i;
+                yy = m;
+            }
+    if(xx + 1 < 4)//将后继都加进列表中
+    {
+        node x = n;
+        x.movement = x.state[xx+1][yy];
+        x.state[xx][yy] = x.state[xx+1][yy];
+        x.state[xx+1][yy] = 0;
+        x.g++;
+        result.push_back(x);
+    }
+    if(xx - 1 >= 0)
+    {
+        node x = n;
+        x.movement = x.state[xx-1][yy];
+        x.state[xx][yy] = x.state[xx-1][yy];
+        x.state[xx-1][yy] = 0;
+        x.g++;
+        result.push_back(x);
+    }
+    if(yy + 1 < 4)
+    {
+        node x = n;
+        x.movement = x.state[xx][yy + 1];
+        x.state[xx][yy] = x.state[xx][yy + 1];
+        x.state[xx][yy + 1] = 0;
+        x.g++;
+        result.push_back(x);
+    }
+    if(yy - 1 >= 0)
+    {
+        node x = n;
+        x.movement = x.state[xx][yy-1];
+        x.state[xx][yy] = x.state[xx][yy-1];
+        x.state[xx][yy-1] = 0;
+        x.g++;
+        result.push_back(x);
+    }
+    result.sort(cmp());//排序
+    return result;
+}
+
+int search_path(list<node> &path, int g, int bound)
+{
+    node n = path.back();
+    int f = g + h(n);
+    if(f > bound)
+        return f;
+    if(is_goal(n))
+        return -1;//found
+    int mini = -2; //无穷
+    list<node> successors = successor(n);
+    list<node>::iterator it;
+    for(it = successors.begin(); it != successors.end(); it++)
+    {
+        if(!in_Path(*it, path))
+        {
+            path.push_back(*it);
+            //cout << (*it).movement << endl;
+            int t;
+            t = search_path(path, g + 1, bound);
+            if(t == -1)//found
+                return -1;
+            if(t < mini || mini < 0)
+                mini = t;
+            path.pop_back();
+        }
+    }
+    return mini;
+}
+
+int main()
+{
+    time_t start, stop;
+    start = time(NULL);
+    node root;
+
+    root.state[0][0] = 5;
+    root.state[0][1] = 1;
+    root.state[0][2] = 7;
+    root.state[0][3] = 3;
+
+    root.state[1][0] = 2;
+    root.state[1][1] = 0;
+    root.state[1][2] = 6;
+    root.state[1][3] = 4;
+
+    root.state[2][0] = 9;
+    root.state[2][1] = 10;
+    root.state[2][2] = 11;
+    root.state[2][3] = 8;
+
+    root.state[3][0] = 13;
+    root.state[3][1] = 14;
+    root.state[3][2] = 15;
+    root.state[3][3] = 12;
+
+    for(int i = 0; i < 4; i++ )
+    {
+        for(int n = 0; n < 4; n++)
+            cout << root.state[i][n] << ' ';
+        cout << endl;
+    }
+
+    int bound = h(root);
+    list<node> path;
+    path.push_back(root);
+    int t;
+    while(true)
+    {
+        t = search_path(path, 0, bound);
+        if(t == -1)
+            break;
+        if(t == -2)
+        {
+            cout << "not found" << endl;
+            break;
+        }
+        bound = t;
+    }
+    stop = time(NULL);
+    list<node>::iterator it;
+    cout << "LowerBound " << bound << " moves" << endl;
+    cout << "A optimal solution " << path.size() - 1 << " moves" << endl;
+    cout << "Used time " << stop - start << " sec" << endl;
+    for(it = path.begin();it != path.end(); it++)
+        if((*it).movement != 0)
+            cout << (*it).movement << ' ';
+    cout << endl;
+    return 0;
+}
+\end{lstlisting}
+
+
+\section{Results}
+\begin{figure}
+\centering
+\includegraphics[width=15cm]{result.png}
+\end{figure}
+
+
+%\clearpage
+%\bibliography{E:/Papers/LiuLab}
+%\bibliographystyle{apalike}
+\end{document}
