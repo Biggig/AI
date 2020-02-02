@@ -1,0 +1,20 @@
+setof(A, branch(A,beigang), Y).
+setof(D, (dis_has(D, yuecai),dis_has(D,xiangcai)), Y).
+遍历，setof(A,restaurant(A,_,_),Ans).
+输出，write(),nl,fail.
+
+findall(A1,(restaurant(A1,_,_),restaurant(A2,Y2,_),A1\=A2,Y1<Y2,setof(As,school(As,Y1,_),Results),length(Results,1)),Res).
+
+-aggregate_all(count, branch(x,Y), Count).
+
+findall/3谓词比较有趣，有点类似select的概念，
+它有三个参数，第一个参数是一个变量或者带变量的表达式，
+用于确定想要find并且 collect的元素结构，第二个参数是一个goal，
+用于执行数据库中是否有匹配项，第三个参数是变量，
+用于绑定最后收集到的匹配的元素列表
+
+setof(A,(restaurant(A,_,_),least(A)),C).
+setof(A,(branch(_,A),num_res_area(A,N),N>=2),C).
+setof(A,(restaurant(A,_,_),longest(A)),C).
+setof(A,(restaurant(A,_,_),num_res_tol(A,N),N>=10),C).
+sameDistrict(ajukejiacai,hongmenyan).
